@@ -106,7 +106,7 @@ do_prefix () {
     fi
 }
 
-ARCHLIST=
+ARCHLIST=arm64-v8a
 register_option "--arch=<list>" do_arch "Comma separated list of architectures to build: arm64-v8a,armeabi,armeabi-v7a,mips,mips64,x86,x86_64"
 do_arch () {
   for ARCH in $(echo $1 | tr ',' '\n') ; do ARCHLIST="$ARCH ${ARCHLIST}"; done
@@ -166,7 +166,7 @@ if [ -d "$PROGDIR/$BUILD_DIR" ]; then
 fi
 
 
-AndroidNDKRoot=$PARAMETERS
+AndroidNDKRoot=${HOME}/Src/android-ndk/out/android-ndk-r17-canary
 if [ -z "$AndroidNDKRoot" ] ; then
   if [ -n "${ANDROID_BUILD_TOP}" ]; then # building from Android sources
     AndroidNDKRoot="${ANDROID_BUILD_TOP}/prebuilts/ndk/current"
@@ -283,6 +283,11 @@ case "$NDK_RN" in
 		TOOLSET=gcc-androidR8e
 		;;
 	"16.0")
+		TOOLCHAIN=${TOOLCHAIN:-llvm}
+		CXXPATH=$AndroidNDKRoot/toolchains/${TOOLCHAIN}/prebuilt/${PlatformOS}-x86_64/bin/clang++
+		TOOLSET=clang
+		;;
+	"17.0")
 		TOOLCHAIN=${TOOLCHAIN:-llvm}
 		CXXPATH=$AndroidNDKRoot/toolchains/${TOOLCHAIN}/prebuilt/${PlatformOS}-x86_64/bin/clang++
 		TOOLSET=clang
@@ -488,16 +493,20 @@ echo "Building boost for android for $ARCH"
          -j$NCPU                      \
          target-os=${TARGET_OS}       \
          toolset=${TOOLSET_ARCH}      \
+         architecture=arm             \
+         abi=aapcs                    \
+         binary-format=elf            \
          $cflags                      \
          $cxxflags                    \
          link=static                  \
          threading=multi              \
-         --layout=versioned           \
-         --without-python             \
          -sICONV_PATH=`pwd`/../libiconv-libicu-android/$ARCH \
          -sICU_PATH=`pwd`/../libiconv-libicu-android/$ARCH \
          --build-dir="./../$BUILD_DIR/build/$ARCH" \
          --prefix="./../$BUILD_DIR/out/$ARCH" \
+         --with-context               \
+         --with-thread                \
+         --with-system                \
          $LIBRARIES                   \
          $LIBRARIES_BROKEN            \
          install 2>&1                 \
